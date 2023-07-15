@@ -18,27 +18,32 @@ const ListScreen = ({navigation}) => {
   const [filteredDataSource, setFilteredDataSource] = useState([]);
   const [masterDataSource, setMasterDataSource] = useState([]);
 
-  // TODO - get cards, use axios with auth
   useEffect(() => {
-    fetch('https://jsonplaceholder.typicode.com/posts')
-      .then((response) => response.json())
-      .then((responseJson) => {
-        setFilteredDataSource(responseJson);
-        setMasterDataSource(responseJson);
+    const config = {
+      baseURL: BASE_URL,
+      headers: {Authorization: "Bearer " + userInfo.token},
+    };
+    axios.create(config)
+      .get(`cards`)
+      .then(res => {
+        let cards = res.data;
+        console.log("cards from API");
+        console.log(cards);
+        setFilteredDataSource(cards);
+        setMasterDataSource(cards);
       })
-      .catch((error) => {
-        console.error(error);
+      .catch(e => {
+        console.log(`cannot get cards, error ${e}`);
       });
   }, []);
 
   const searchFilterFunction = (text) => {
-    // Check if searched text is not blank
     if (text) {
       // Inserted text is not blank
       // Filter the masterDataSource and update FilteredDataSource
-      const newData = masterDataSource.filter(function (item) {
+      const newData = masterDataSource.filter(function (card) {
         // Applying filter for the inserted text in search bar
-        const itemData = item.title ? item.title.toLowerCase() : '';
+        const itemData = `${card.front} ${card.back}`.toLowerCase();
         const textData = text.toLowerCase();
         return itemData.indexOf(textData) > -1;
       });
@@ -55,8 +60,8 @@ const ListScreen = ({navigation}) => {
   const ItemView = ({ item }) => {
     return (
       // Flat List Item
-      <Text style={styles.itemStyle} onPress={() => getItem(item)}>
-        {item.id + " - " + item.title}
+      <Text style={styles.itemStyle} onPress={() => openCard(item)}>
+        {item.front + " - " + item.back}
       </Text>
     );
   };
@@ -74,10 +79,8 @@ const ListScreen = ({navigation}) => {
     );
   };
 
-  const getItem = (item) => {
-    // Function for click on an item
-    //alert('Id : ' + item.id + ' Title : ' + item.title);
-    navigation.navigate('Card', {id: item.id});
+  const openCard = (card) => {
+    navigation.navigate('Card', {id: card._id});
   };
 
   return (

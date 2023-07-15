@@ -2,6 +2,8 @@ import {useContext, useEffect, useState} from 'react';
 import {Button, StyleSheet, Text, View} from 'react-native';
 import {useRoute} from "@react-navigation/native"
 import {AuthContext} from '../context/AuthContext';
+import axios from 'axios';
+import {BASE_URL} from '../config';
 
 const CardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
@@ -10,13 +12,18 @@ const CardScreen = ({navigation}) => {
   const id = route.params?.id;
 
   useEffect(() => {
-    fetch('https://jsonplaceholder.typicode.com/posts/' + id)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        setCard(responseJson);
+    const config = {
+      baseURL: BASE_URL,
+      headers: {Authorization: "Bearer " + userInfo.token},
+    };
+    axios.create(config)
+      .get(`cards/${id}`)
+      .then(res => {
+        let card = res.data;
+        setCard(card);
       })
-      .catch((error) => {
-        console.error(error);
+      .catch(e => {
+        console.log(`cannot get card ${id}, error ${e}`);
       });
   }, []);
 
@@ -25,7 +32,7 @@ const CardScreen = ({navigation}) => {
       {card == null ?
         <Text style={styles.welcome}>Card {id} loading...</Text>
         :
-        <Text style={styles.welcome}>{card.title}</Text>
+        <Text style={styles.welcome}>{card.front} - {card.back}</Text>
       }
     </View>
   );
