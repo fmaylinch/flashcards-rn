@@ -11,6 +11,7 @@ const HomeScreen = ({navigation}) => {
       <Spinner visible={isLoading} />
       <Text style={styles.welcome}>Welcome {userInfo.username}</Text>
       <Button title="Flashcard List" onPress={() => navigation.navigate('List')} />
+      <Button title="Create Card" onPress={() => navigation.navigate('CreateCard')} />
       <Button title="Logout" color="red" onPress={logout} />
     </View>
   );
