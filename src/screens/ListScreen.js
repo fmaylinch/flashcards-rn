@@ -21,9 +21,11 @@ const ListScreen = ({navigation}) => {
       .get(`cards`)
       .then(res => {
         let cards = res.data;
-        //console.log("cards from API");
-        //console.log(cards);
-        cards.forEach(card => card.displayText = pickCardText(card));
+        shuffleArray(cards);
+        cards.forEach(card => {
+          card.displayText = pickCardText(card);
+          card.searchText = `${card.front} ${card.back} ${card.tags}`.toLowerCase();
+        });
         setFilteredDataSource(cards);
         setMasterDataSource(cards);
       })
@@ -32,21 +34,21 @@ const ListScreen = ({navigation}) => {
       });
   }, []);
 
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
   const searchFilterFunction = (text) => {
     if (text) {
-      // Inserted text is not blank
-      // Filter the masterDataSource and update FilteredDataSource
-      const newData = masterDataSource.filter(function (card) {
-        // Applying filter for the inserted text in search bar
-        const itemData = `${card.front} ${card.back}`.toLowerCase();
-        const textData = text.toLowerCase();
-        return itemData.indexOf(textData) > -1;
-      });
-      setFilteredDataSource(newData);
+      const textLower = text.toLowerCase();
+      const filtered = masterDataSource.filter(card => card.searchText.indexOf(textLower) >= 0);
+      setFilteredDataSource(filtered);
       setSearch(text);
     } else {
-      // Inserted text is blank
-      // Update FilteredDataSource with masterDataSource
       setFilteredDataSource(masterDataSource);
       setSearch(text);
     }
