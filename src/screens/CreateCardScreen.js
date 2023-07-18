@@ -13,7 +13,7 @@ const CreateCardScreen = ({navigation}) => {
   const [message, setMessage] = useState('Enter data');
   
   async function createCard() {
-    const tagsArray = tags.toLowerCase().split(/[ ,]+/);
+    const tagsArray = tags.trim().toLowerCase().split(/[ ,]+/);
 
     const config = {
         baseURL: BASE_URL,
@@ -21,11 +21,15 @@ const CreateCardScreen = ({navigation}) => {
       };
 
     const card = {
-        front,
-        back,
+        front: front.trim(),
+        back: back.trim(),
         tags: tagsArray,
         tts: true
     };
+
+    if (!card.front || !card.back) {
+        return;
+    }
 
     setMessage("Creating card")
     axios.create(config)
@@ -57,12 +61,14 @@ const CreateCardScreen = ({navigation}) => {
         <TextInput
           placeholder="Japanese"
           style={styles.input}
+          multiline={true}
           value={front}
           onChangeText={v => setFront(v)}
         />
         <TextInput
           placeholder="English"
           style={styles.input}
+          multiline={true}
           value={back}
           onChangeText={v => setBack(v)}
         />
