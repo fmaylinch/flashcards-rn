@@ -1,12 +1,6 @@
 import React, {useContext, useState, useEffect} from 'react';
-import {
-  SafeAreaView,
-  Text,
-  StyleSheet,
-  View,
-  FlatList,
-  TextInput,
-} from 'react-native';
+import {SafeAreaView, Text, StyleSheet, View, FlatList, TextInput} from 'react-native';
+import {Audio} from 'expo-av';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
@@ -27,8 +21,9 @@ const ListScreen = ({navigation}) => {
       .get(`cards`)
       .then(res => {
         let cards = res.data;
-        console.log("cards from API");
-        console.log(cards);
+        //console.log("cards from API");
+        //console.log(cards);
+        cards.forEach(card => card.displayText = pickCardText(card));
         setFilteredDataSource(cards);
         setMasterDataSource(cards);
       })
@@ -57,12 +52,20 @@ const ListScreen = ({navigation}) => {
     }
   };
 
+  function pickCardText(card) {
+    const showFront = card.orientation == 1 || // 1 means front
+      // 2 means both, so we choose randomly (3 means back)
+      (card.orientation == 2 && Math.floor(Math.random() * 2) == 0);
+    return showFront ? card.front : card.back;
+  }
+
   const ItemView = ({ item }) => {
+    const card = item;
     return (
-      // Flat List Item
-      <Text style={styles.itemStyle} onPress={() => openCard(item)}>
-        {item.front + " - " + item.back}
-      </Text>
+      <View style={styles.itemContainer}>
+        <Text style={styles.item} onPress={() => openCard(card)}>{card.displayText}</Text>
+        <Text style={styles.itemButton} onPress={() => playSound(card)}>▶️</Text>
+      </View>
     );
   };
 
@@ -82,6 +85,32 @@ const ListScreen = ({navigation}) => {
   const openCard = (card) => {
     navigation.navigate('Card', {id: card._id});
   };
+
+
+  // https://docs.expo.dev/versions/latest/sdk/audio/#usage
+  // TODO - refactor usage here and in CardScreen
+
+  const [sound, setSound] = useState();
+
+  async function playSound(card) {
+    const uri = `${BASE_URL}/audio/${card.files[0]}`;
+    console.log('Loading Sound from uri', uri);
+    const { sound } = await Audio.Sound.createAsync({uri});
+    setSound(sound);
+    //console.log('Setting status callback');
+    //sound.setOnPlaybackStatusUpdate(status => console.log(status));
+    await sound.playAsync();
+  }
+
+  useEffect(() => {
+    return sound
+      ? () => {
+          console.log('Unloading Sound');
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
+
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -108,11 +137,22 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#334',
   },
-  itemStyle: {
+  item: {
     padding: 10,
     color: "#eee",
     fontSize: 18,
     backgroundColor: "#334",
+    flex: 1,
+  },
+  itemButton: {
+    padding: 10,
+    color: "#eee",
+    fontSize: 18,
+    backgroundColor: "#334",
+  },
+  itemContainer: {
+    display: "flex",
+    flexDirection: "row",
   },
   textInputStyle: {
     borderWidth: 1,
