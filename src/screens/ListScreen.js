@@ -25,6 +25,9 @@ const ListScreen = ({navigation}) => {
         cards.forEach(card => {
           card.displayText = pickCardText(card);
           card.searchText = `${card.front} ${card.back} ${card.tags}`.toLowerCase();
+          if (card.files.length > 0) { // randomly choose first file to play
+            card.fileIndex = Math.floor(Math.random() * card.files.length);
+          }
         });
         setFilteredDataSource(cards);
         setMasterDataSource(cards);
@@ -95,7 +98,8 @@ const ListScreen = ({navigation}) => {
   const [sound, setSound] = useState();
 
   async function playSound(card) {
-    const uri = `${BASE_URL}/audio/${card.files[0]}`;
+    const uri = `${BASE_URL}/audio/${card.files[card.fileIndex]}`;
+    card.fileIndex = (card.fileIndex + 1) % card.files.length; // rotate file to play next
     console.log('Loading Sound from uri', uri);
     const { sound } = await Audio.Sound.createAsync({uri});
     setSound(sound);
@@ -115,7 +119,7 @@ const ListScreen = ({navigation}) => {
 
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#334' }}>
       <View style={styles.container}>
         <TextInput
           style={styles.textInputStyle}
@@ -142,15 +146,13 @@ const styles = StyleSheet.create({
   item: {
     padding: 10,
     color: "#eee",
-    fontSize: 18,
-    backgroundColor: "#334",
+    fontSize: 24,
     flex: 1,
   },
   itemButton: {
     padding: 10,
     color: "#eee",
-    fontSize: 18,
-    backgroundColor: "#334",
+    fontSize: 24,
   },
   itemContainer: {
     display: "flex",

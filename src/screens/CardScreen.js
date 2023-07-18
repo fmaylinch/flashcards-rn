@@ -35,8 +35,8 @@ const CardScreen = ({navigation}) => {
 
   const [sound, setSound] = useState();
 
-  async function playSound() {
-    const uri = `${BASE_URL}/audio/${card.files[0]}`;
+  async function playSound(file) {
+    const uri = `${BASE_URL}/audio/${file}`;
     console.log('Loading Sound from uri', uri);
     const { sound } = await Audio.Sound.createAsync({uri});
     setSound(sound);
@@ -54,6 +54,14 @@ const CardScreen = ({navigation}) => {
       : undefined;
   }, [sound]);
 
+  function playButtons(card) {
+    if (card.files.length == 0) {
+      return <Text>(No audio)</Text>;
+    }
+    return <View style={styles.buttonView}>{ card.files.map(f =>
+        <Text style={styles.itemButton} onPress={() => playSound(f)}>▶️</Text>)
+      }</View>
+  }
 
   return (
     <View style={styles.container}>
@@ -62,10 +70,7 @@ const CardScreen = ({navigation}) => {
         : <>
             <Text style={styles.text}>{card.front}</Text>
             <Text style={styles.text}>{card.back}</Text>
-            { card.files[0] ?
-              <Button title="▶️ Play" onPress={playSound}/>
-              : <Text>(No audio)</Text>
-            }
+            { playButtons(card) }
           </>
       }
     </View>
@@ -77,10 +82,22 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#334',
+    padding: 20,
+  },
+  itemButton: {
+    padding: 10,
+    color: "#eee",
+    fontSize: 30,
+  },
+  buttonView: {
+    flexDirection: 'row',
   },
   text: {
-    fontSize: 18,
+    fontSize: 30,
     marginBottom: 8,
+    textAlign: 'center',
+    color: "#eee",
   },
 });
 
