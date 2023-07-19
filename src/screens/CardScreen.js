@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from 'react';
-import {Button, StyleSheet, Text, View} from 'react-native';
+import {Button, StyleSheet, Text, View, Alert} from 'react-native';
 import {useRoute} from "@react-navigation/native"
 import {AuthContext} from '../context/AuthContext';
 import {Audio} from 'expo-av';
@@ -14,6 +14,7 @@ const CardScreen = ({navigation}) => {
   const id = route.params?.id;
 
   useEffect(() => {
+    // TODO - refactor these calls
     const config = {
       baseURL: BASE_URL,
       headers: {Authorization: "Bearer " + userInfo.token},
@@ -59,8 +60,32 @@ const CardScreen = ({navigation}) => {
       return <Text>(No audio)</Text>;
     }
     return <View style={styles.buttonView}>{ card.files.map(f =>
-        <Text style={styles.itemButton} onPress={() => playSound(f)}>▶️</Text>)
+        <Text key={f} style={styles.itemButton} onPress={() => playSound(f)}>▶️</Text>)
       }</View>
+  }
+
+  function confirmDeleteCard() {
+    // https://reactnative.dev/docs/alert
+    Alert.alert('Delete Card', 'Do you want to delete the card?', [
+      {text: 'No', style: 'cancel'},
+      {text: 'Yes, delete it', onPress: deleteCard, style: 'destructive'},
+    ]);
+  }
+
+  function deleteCard() {
+    // TODO - refactor these calls
+    const config = {
+      baseURL: BASE_URL,
+      headers: {Authorization: "Bearer " + userInfo.token},
+    };
+    axios.create(config)
+      .delete(`cards/${id}`)
+      // TODO - reload list, so this card doesn't appear
+      .then(() => navigation.goBack())
+      .catch(e => {
+        console.log(`cannot delete card ${id}, error ${e}`);
+        Alert.alert('Could not delete card', e);
+      });
   }
 
   return (
@@ -70,7 +95,9 @@ const CardScreen = ({navigation}) => {
         : <>
             <Text style={styles.text}>{card.front}</Text>
             <Text style={styles.text}>{card.back}</Text>
+            <Text style={styles.tags}>{card.tags.join(" ")}</Text>
             { playButtons(card) }
+            <Button title='Delete' color='red' onPress={confirmDeleteCard}></Button>
           </>
       }
     </View>
@@ -98,6 +125,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
     color: "#eee",
+  },
+  tags: {
+    fontSize: 18,
+    marginBottom: 20,
+    marginTop: 20,
+    textAlign: 'center',
+    color: '#778',
   },
 });
 
