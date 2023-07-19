@@ -9,10 +9,13 @@ const ListScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
 
   const [search, setSearch] = useState('');
+  const [forcedOrientation, setForcedOrientation] = useState(null);
   const [filteredDataSource, setFilteredDataSource] = useState([]);
   const [masterDataSource, setMasterDataSource] = useState([]);
 
   useEffect(() => {
+    // TODO - refactor these calls
+    console.log("Loading list of cards from API");
     const config = {
       baseURL: BASE_URL,
       headers: {Authorization: "Bearer " + userInfo.token},
@@ -21,21 +24,74 @@ const ListScreen = ({navigation}) => {
       .get(`cards`)
       .then(res => {
         let cards = res.data;
-        shuffleArray(cards);
         cards.forEach(card => {
-          card.displayText = pickCardText(card);
+          card.displayText = pickCardText(card, card.orientation);
           card.searchText = `${card.front} ${card.back} ${card.tags}`.toLowerCase();
           if (card.files.length > 0) { // randomly choose first file to play
             card.fileIndex = Math.floor(Math.random() * card.files.length);
           }
         });
-        setFilteredDataSource(cards);
         setMasterDataSource(cards);
+        // We need to send cards here, because otherwise we try to filter cards
+        // before masterDataSource is updated. We could also useEffect to react
+        // to changes on masterDataSource (and maybe changes to search too?).
+        applySearch(search, cards);
       })
       .catch(e => {
         console.log(`cannot get cards, error ${e}`);
       });
   }, []);
+
+  const applySearch = (text, cards) => {
+    if (text) {
+      const cleanText = text.toLowerCase().trim();
+      const commands = cleanText.split(/ *: */);
+
+      const searchTerms = commands[0].split(/ +/); // first command is filter
+      let filtered = filterCards(cards, searchTerms);
+
+      filtered = processCommands(filtered, commands.slice(1)); // other commands
+      
+      setFilteredDataSource(filtered);
+      setSearch(text);
+    } else {
+      setFilteredDataSource(cards);
+      setSearch(text);
+    }
+  };
+
+  function filterCards(cards, searchTerms) {
+      return cards.filter(card => {
+        for (const term of searchTerms) {
+          //console.log(`Searching ${term} in ${card.searchText}`)
+          if (card.searchText.indexOf(term) < 0) {
+            return false; // some term not found
+          }
+        }
+        return true;
+      });
+  }
+
+  function processCommands(cards, commands) {
+    let orientation = null;
+    for (const command of commands) {
+      switch (command) {
+        case 'jp':
+          orientation = 1;
+          break;
+        case 'en':
+          orientation = 3;
+          break;
+        case 'rnd':
+          shuffleArray(cards);
+          break;
+        default:
+          break;
+      }
+    }
+    setForcedOrientation(orientation);
+    return cards;
+  }
 
   function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -45,30 +101,22 @@ const ListScreen = ({navigation}) => {
     return array;
   }
 
-  const searchFilterFunction = (text) => {
-    if (text) {
-      const textLower = text.toLowerCase();
-      const filtered = masterDataSource.filter(card => card.searchText.indexOf(textLower) >= 0);
-      setFilteredDataSource(filtered);
-      setSearch(text);
-    } else {
-      setFilteredDataSource(masterDataSource);
-      setSearch(text);
-    }
-  };
-
-  function pickCardText(card) {
-    const showFront = card.orientation == 1 || // 1 means front
+  function pickCardText(card, orientation) {
+    const showFront = orientation == 1 || // 1 means front
       // 2 means both, so we choose randomly (3 means back)
-      (card.orientation == 2 && Math.floor(Math.random() * 2) == 0);
+      (orientation == 2 && Math.floor(Math.random() * 2) == 0);
     return showFront ? card.front : card.back;
+  }
+
+  function pickDynamicCardText(card) {
+    return forcedOrientation ? pickCardText(card, forcedOrientation) : card.displayText;
   }
 
   const ItemView = ({ item }) => {
     const card = item;
     return (
       <View style={styles.itemContainer}>
-        <Text style={styles.item} onPress={() => openCard(card)}>{card.displayText}</Text>
+        <Text style={styles.item} onPress={() => openCard(card)}>{pickDynamicCardText(card)}</Text>
         <Text style={styles.itemButton} onPress={() => playSound(card)}>▶️</Text>
       </View>
     );
@@ -123,14 +171,14 @@ const ListScreen = ({navigation}) => {
       <View style={styles.container}>
         <TextInput
           style={styles.textInputStyle}
-          onChangeText={(text) => searchFilterFunction(text)}
+          onChangeText={(text) => applySearch(text, masterDataSource)}
           value={search}
           underlineColorAndroid="transparent"
           placeholder="Search Here"
         />
         <FlatList
           data={filteredDataSource}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(card, index) => card._id}
           ItemSeparatorComponent={ItemSeparatorView}
           renderItem={ItemView}
         />
