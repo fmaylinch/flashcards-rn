@@ -26,7 +26,7 @@ const ListScreen = ({navigation}) => {
         let cards = res.data;
         cards.forEach(card => {
           card.displayText = pickCardText(card, card.orientation);
-          card.searchText = `${card.front} ${card.back} ${card.tags}`.toLowerCase();
+          card.searchText = `${card.front} ${card.back} ${card.tags} ${card.notes}`.toLowerCase();
           if (card.files.length > 0) { // randomly choose first file to play
             card.fileIndex = Math.floor(Math.random() * card.files.length);
           }
@@ -136,7 +136,7 @@ const ListScreen = ({navigation}) => {
   };
 
   const openCard = (card) => {
-    navigation.navigate('Card', {id: card._id});
+    navigation.navigate('Card', {card});
   };
 
 
@@ -170,6 +170,7 @@ const ListScreen = ({navigation}) => {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#334' }}>
       <View style={styles.container}>
         <TextInput
+          clearButtonMode='always'
           style={styles.textInputStyle}
           onChangeText={(text) => applySearch(text, masterDataSource)}
           value={search}

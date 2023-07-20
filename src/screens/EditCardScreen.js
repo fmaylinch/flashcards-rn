@@ -1,19 +1,23 @@
-import {useContext, useEffect, useState} from 'react';
-import {Button, StyleSheet, Text, View, TextInput, CheckBox} from 'react-native';
+import {useContext, useState} from 'react';
+import {useRoute} from "@react-navigation/native"
+import {Button, StyleSheet, Text, View, TextInput, Alert} from 'react-native';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
 
-const CreateCardScreen = ({navigation}) => {
+const EditCardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
 
-  const [front, setFront] = useState('');
-  const [back, setBack] = useState('');
-  const [notes, setNotes] = useState('');
-  const [tags, setTags] = useState('');
+  const route = useRoute()
+  const card = route.params?.card;
+
+  const [front, setFront] = useState(card.front);
+  const [back, setBack] = useState(card.back);
+  const [notes, setNotes] = useState(card.notes);
+  const [tags, setTags] = useState(card.tags.join(" "));
   const [message, setMessage] = useState('');
   
-  async function createCard() {
+  async function updateCard() {
 
     // Required fields
     if (!front.trim() || !back.trim()) {
@@ -28,7 +32,7 @@ const CreateCardScreen = ({navigation}) => {
         headers: {Authorization: "Bearer " + userInfo.token},
       };
 
-    const card = {
+    const cardUpdate = {
         front: front.trim(),
         back: back.trim(),
         notes: notes.trim(),
@@ -36,16 +40,17 @@ const CreateCardScreen = ({navigation}) => {
         tts: true
     };
 
-    setMessage("Creating card")
+    setMessage("Updating card")
     axios.create(config)
-        .post(`cards`, card)
+        .put(`cards/${card._id}`, cardUpdate)
         .then(res => {
           let card = res.data;
-          console.log("Created card", card);
-          setMessage("Card created!");
+          console.log("Updated card", card);
+          setMessage("Card updated!");
         })
         .catch(e => {
-          console.log(`Cannot create card, error ${e}`);
+          // TODO - the error message is not well received
+          console.log(`Cannot update card`, JSON.stringify(e));
           setMessage("Error: " + JSON.stringify(e))
         });
   }
@@ -55,6 +60,30 @@ const CreateCardScreen = ({navigation}) => {
     setBack("");
     setTags("");
     setMessage("");
+  }
+
+  function confirmDeleteCard() {
+    // https://reactnative.dev/docs/alert
+    Alert.alert('Delete Card', 'Do you want to delete the card?', [
+      {text: 'No', style: 'cancel'},
+      {text: 'Yes, delete it', onPress: deleteCard, style: 'destructive'},
+    ]);
+  }
+
+  function deleteCard() {
+    // TODO - refactor these calls
+    const config = {
+      baseURL: BASE_URL,
+      headers: {Authorization: "Bearer " + userInfo.token},
+    };
+    axios.create(config)
+      .delete(`cards/${card._id}`)
+      // TODO - reload list, so this card doesn't appear
+      .then(() => setMessage("Card deleted!"))
+      .catch(e => {
+        console.log(`cannot delete card ${card._id}, error ${e}`);
+        Alert.alert('Could not delete card', e);
+      });
   }
 
   return (
@@ -78,6 +107,7 @@ const CreateCardScreen = ({navigation}) => {
         <TextInput
           placeholder="Notes"
           style={styles.input}
+          multiline={true}
           value={notes}
           onChangeText={v => setNotes(v)}
         />
@@ -88,12 +118,13 @@ const CreateCardScreen = ({navigation}) => {
           onChangeText={v => setTags(v)}
         />
   
-        <Button title="Create"
-          onPress={createCard}
-        />
-        <Button title="Clear" color="red"
-          onPress={clearFields}
-        />
+        <View style={styles.buttonContainer}>
+          <Button title='Update' onPress={updateCard}></Button>
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <Button title='Delete' color='red' onPress={confirmDeleteCard}></Button>
+        </View>
 
         <Text style={styles.message}>{message}</Text>
 
@@ -126,4 +157,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default CreateCardScreen;
+export default EditCardScreen;

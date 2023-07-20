@@ -4,6 +4,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import ListScreen from '../screens/ListScreen';
 import CardScreen from '../screens/CardScreen';
+import EditCardScreen from '../screens/EditCardScreen';
 import CreateCardScreen from '../screens/CreateCardScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -30,8 +31,9 @@ const Navigation = () => {
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="List" component={ListScreen} />
-            <Stack.Screen name="Card" component={CardScreen} />
             <Stack.Screen name="CreateCard" component={CreateCardScreen} />
+            <Stack.Screen name="Card" component={CardScreen} />
+            <Stack.Screen name="EditCard" component={EditCardScreen} />
           </>
         ) : (
           <>
