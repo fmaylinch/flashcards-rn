@@ -1,6 +1,7 @@
 import {useContext, useState} from 'react';
 import {useRoute} from "@react-navigation/native"
 import {Button, StyleSheet, Text, View, TextInput, Alert} from 'react-native';
+import Slider from '@react-native-community/slider';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
@@ -13,6 +14,7 @@ const EditCardScreen = ({navigation}) => {
 
   const [front, setFront] = useState(card.front);
   const [back, setBack] = useState(card.back);
+  const [orientation, setOrientation] = useState(card.orientation);
   const [notes, setNotes] = useState(card.notes);
   const [tags, setTags] = useState(card.tags.join(" "));
   const [message, setMessage] = useState('');
@@ -35,9 +37,10 @@ const EditCardScreen = ({navigation}) => {
     const cardUpdate = {
         front: front.trim(),
         back: back.trim(),
+        orientation: orientation,
         notes: notes.trim(),
         tags: tagsArray,
-        tts: true
+        tts: card.tts
     };
 
     setMessage("Updating card")
@@ -86,6 +89,15 @@ const EditCardScreen = ({navigation}) => {
       });
   }
 
+  function orientationLabel() {
+    switch (orientation) {
+        case 1: return "front";
+        case 2: return "both";
+        case 3: return "back";
+        default: return "unexpected value: " + orientation;
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.wrapper}>
@@ -104,6 +116,20 @@ const EditCardScreen = ({navigation}) => {
           value={back}
           onChangeText={v => setBack(v)}
         />
+
+        <Text>Orientation: {orientationLabel()}</Text>
+
+        <Slider
+            style={{marginBottom: 12}}
+            minimumValue={1}
+            maximumValue={3}
+            step={1}
+            value={orientation}
+            minimumTrackTintColor="#bbb"
+            maximumTrackTintColor="#bbb"
+            onSlidingComplete={v => setOrientation(v)}
+        />
+
         <TextInput
           placeholder="Notes"
           style={styles.input}
