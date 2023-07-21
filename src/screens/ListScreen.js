@@ -36,6 +36,7 @@ const ListScreen = ({navigation}) => {
             card.fileIndex = Math.floor(Math.random() * card.files.length);
           }
         });
+        sort(cards, c => c.updated, -1);
         setMasterDataSource(cards);
         // We need to send cards here, because otherwise we try to filter cards
         // before masterDataSource is updated. We could also useEffect to react
@@ -58,12 +59,11 @@ const ListScreen = ({navigation}) => {
       filtered = processCommands(filtered, commands.slice(1)); // other commands
       
       setFilteredDataSource(filtered);
-      setSearch(text);
     } else {
       setForcedOrientation(null);
       setFilteredDataSource(cards);
-      setSearch(text);
     }
+    setSearch(text);
   };
 
     // hack to leave some space at the end of the list
@@ -87,7 +87,6 @@ const ListScreen = ({navigation}) => {
 
   function processCommands(cards, commands) {
     let orientation = null;
-    let sorted = false;
     for (const command of commands) {
       switch (command) {
 
@@ -105,15 +104,12 @@ const ListScreen = ({navigation}) => {
         // sort
         case 'sjp':
           sort(cards, c => c.front);
-          sorted = true;
           break;
         case 'sen':
           sort(cards, c => c.back.toLowerCase());
-          sorted = true;
           break;
         case 'rnd':
           shuffleArray(cards);
-          sorted = true;
           break;
 
         default:
@@ -121,9 +117,6 @@ const ListScreen = ({navigation}) => {
       }
     }
     setForcedOrientation(orientation);
-    if (!sorted) {
-      sort(cards, c => c.updated, -1);
-    }
     return cards;
   }
 
