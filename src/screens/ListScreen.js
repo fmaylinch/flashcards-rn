@@ -5,6 +5,11 @@ import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
 
+const ORIENTATION_FRONT = 1;
+const ORIENTATION_BOTH = 2;
+const ORIENTATION_BACK = 3;
+const ORIENTATION_HIDE = 4;
+
 const ListScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
 
@@ -55,10 +60,18 @@ const ListScreen = ({navigation}) => {
       setFilteredDataSource(filtered);
       setSearch(text);
     } else {
+      setForcedOrientation(null);
       setFilteredDataSource(cards);
       setSearch(text);
     }
   };
+
+    // hack to leave some space at the end of the list
+    function addDummyItem(cards) {
+    const copy = cards.slice();
+    copy.push({_id: "dummy"});
+    return copy;
+  }
 
   function filterCards(cards, searchTerms) {
       return cards.filter(card => {
@@ -74,23 +87,52 @@ const ListScreen = ({navigation}) => {
 
   function processCommands(cards, commands) {
     let orientation = null;
+    let sorted = false;
     for (const command of commands) {
       switch (command) {
+
+        // orientation
         case 'jp':
-          orientation = 1;
+          orientation = ORIENTATION_FRONT;
           break;
         case 'en':
-          orientation = 3;
+          orientation = ORIENTATION_BACK;
+          break;
+        case 'hide':
+          orientation = ORIENTATION_HIDE;
+          break;
+
+        // sort
+        case 'sjp':
+          sort(cards, c => c.front);
+          sorted = true;
+          break;
+        case 'sen':
+          sort(cards, c => c.back.toLowerCase());
+          sorted = true;
           break;
         case 'rnd':
           shuffleArray(cards);
+          sorted = true;
           break;
+
         default:
           break;
       }
     }
     setForcedOrientation(orientation);
+    if (!sorted) {
+      sort(cards, c => c.updated, -1);
+    }
     return cards;
+  }
+
+  function sort(cards, fieldGetter, order = 1) {
+    cards.sort(( a, b ) => {
+      if ( fieldGetter(a) > fieldGetter(b) ) return order;
+      if ( fieldGetter(a) < fieldGetter(b) ) return -order;
+      return 0;
+    })
   }
 
   function shuffleArray(array) {
@@ -102,18 +144,23 @@ const ListScreen = ({navigation}) => {
   }
 
   function pickCardText(card, orientation) {
-    const showFront = orientation == 1 || // 1 means front
+    const showFront = orientation == ORIENTATION_FRONT ||
       // 2 means both, so we choose randomly (3 means back)
-      (orientation == 2 && Math.floor(Math.random() * 2) == 0);
+      (orientation == ORIENTATION_BOTH && Math.floor(Math.random() * 2) == 0);
     return showFront ? card.front : card.back;
   }
 
   function pickDynamicCardText(card) {
+    if (forcedOrientation == ORIENTATION_HIDE) return "";
     return forcedOrientation ? pickCardText(card, forcedOrientation) : card.displayText;
   }
 
   const ItemView = ({ item }) => {
     const card = item;
+    // hack to leave some space at the end
+    if (card._id == "dummy") {
+      return <View style={{padding: 20}}></View>;
+    }
     return (
       <View style={styles.itemContainer}>
         <Text style={styles.item} onPress={() => openCard(card)}>{pickDynamicCardText(card)}</Text>
@@ -178,7 +225,7 @@ const ListScreen = ({navigation}) => {
           placeholder="Search Here"
         />
         <FlatList
-          data={filteredDataSource}
+          data={addDummyItem(filteredDataSource)}
           keyExtractor={(card, index) => card._id}
           ItemSeparatorComponent={ItemSeparatorView}
           renderItem={ItemView}
