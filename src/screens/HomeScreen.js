@@ -10,8 +10,7 @@ const HomeScreen = ({navigation}) => {
     <View style={styles.container}>
       <Spinner visible={isLoading} />
       <Text style={styles.welcome}>Welcome {userInfo.username}</Text>
-      <Button title="Flashcard List" onPress={() => navigation.navigate('List')} />
-      <Button title="Create Card" onPress={() => navigation.navigate('CreateCard')} />
+      <Button title="Flashcards" onPress={() => navigation.navigate('List')} />
       <Button title="Logout" color="red" onPress={logout} />
     </View>
   );

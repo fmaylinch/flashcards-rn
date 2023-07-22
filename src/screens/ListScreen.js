@@ -1,5 +1,5 @@
 import React, {useContext, useState, useEffect} from 'react';
-import {SafeAreaView, Text, StyleSheet, View, FlatList, TextInput} from 'react-native';
+import {SafeAreaView, Text, StyleSheet, View, FlatList, TextInput, Button} from 'react-native';
 import {Audio} from 'expo-av';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
@@ -40,6 +40,14 @@ const ListScreen = ({navigation}) => {
         console.log(`cannot get cards, error ${e}`);
       });
   }, []);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button onPress={() => navigation.navigate('CreateCard')} title="Add" />
+      ),
+    });
+  }, [navigation]);
 
   function prepareCards(cards) {
     cards.forEach(card => {
