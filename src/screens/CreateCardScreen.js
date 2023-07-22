@@ -21,7 +21,8 @@ const CreateCardScreen = ({navigation}) => {
         return;
     }
 
-    const tagsArray = tags.trim().toLowerCase().split(/[ ,]+/);
+    // TODO - this is also used in EditCardScreen
+    const tagsArray = tags.trim().toLowerCase().split(/[ ,.]+/).filter(x => x);
 
     const config = {
         baseURL: BASE_URL,
@@ -42,7 +43,7 @@ const CreateCardScreen = ({navigation}) => {
         .then(res => {
           let card = res.data;
           console.log("Created card", card);
-          setMessage("Card created!");
+          setMessage("Card created: " + card.front);
         })
         .catch(e => {
           console.log(`Cannot create card, error ${e}`);
@@ -78,6 +79,7 @@ const CreateCardScreen = ({navigation}) => {
         <TextInput
           placeholder="Notes"
           style={styles.input}
+          multiline={true}
           value={notes}
           onChangeText={v => setNotes(v)}
         />

@@ -27,7 +27,8 @@ const EditCardScreen = ({navigation}) => {
         return;
     }
 
-    const tagsArray = tags.trim().toLowerCase().split(/[ ,]+/);
+    // TODO - this is also used in CreateCardScreen
+    const tagsArray = tags.trim().toLowerCase().split(/[ ,.]+/).filter(x => x);
 
     const config = {
         baseURL: BASE_URL,
@@ -49,6 +50,7 @@ const EditCardScreen = ({navigation}) => {
         .then(res => {
           let card = res.data;
           console.log("Updated card", card);
+          // TODO - update other screens (CardScreen, ListScreen)
           setMessage("Card updated!");
         })
         .catch(e => {
