@@ -29,14 +29,7 @@ const ListScreen = ({navigation}) => {
       .get(`cards`)
       .then(res => {
         let cards = res.data;
-        cards.forEach(card => {
-          card.displayText = pickCardText(card, card.orientation);
-          card.searchText = `${card.front} ${card.back} ${card.tags} ${card.notes}`.toLowerCase();
-          if (card.files.length > 0) { // randomly choose first file to play
-            card.fileIndex = Math.floor(Math.random() * card.files.length);
-          }
-        });
-        sort(cards, c => c.updated, -1);
+        prepareCards(cards);
         setMasterDataSource(cards);
         // We need to send cards here, because otherwise we try to filter cards
         // before masterDataSource is updated. We could also useEffect to react
@@ -47,6 +40,19 @@ const ListScreen = ({navigation}) => {
         console.log(`cannot get cards, error ${e}`);
       });
   }, []);
+
+  function prepareCards(cards) {
+    cards.forEach(card => {
+      card.displayText = pickCardText(card, card.orientation);
+      const tagsWithDots = card.tags.map(tag => tag + ".");
+      card.searchText = `${card.front} ${card.back} ${tagsWithDots} ${card.notes}`.toLowerCase();
+      if (card.files.length > 0) { // randomly choose first file to play
+        card.fileIndex = Math.floor(Math.random() * card.files.length);
+      }
+    });
+    sort(cards, c => c.updated, -1);
+
+  }
 
   const applySearch = (text, cards) => {
     if (text) {
@@ -66,10 +72,13 @@ const ListScreen = ({navigation}) => {
     setSearch(text);
   };
 
-    // hack to leave some space at the end of the list
-    function addDummyItem(cards) {
+    // Add special list items
+    function addDummyItems(cards) {
     const copy = cards.slice();
-    copy.push({_id: "dummy"});
+    const amount = cards.length == masterDataSource.length ?
+      `all ${cards.length}` : `${cards.length} of ${masterDataSource.length}`;
+    copy.unshift({_id: "info", dummy: true, info: `Showing ${amount} cards`});
+    copy.push({_id: "last", dummy: true}); // just to add margin at the end
     return copy;
   }
 
@@ -150,9 +159,11 @@ const ListScreen = ({navigation}) => {
 
   const ItemView = ({ item }) => {
     const card = item;
-    // hack to leave some space at the end
-    if (card._id == "dummy") {
-      return <View style={{padding: 20}}></View>;
+    if (card.dummy) {
+      return (
+        <View style={styles.itemContainer}>
+          <Text style={styles.info}>{card.info}</Text>
+        </View>);
     }
     return (
       <View style={styles.itemContainer}>
@@ -164,12 +175,11 @@ const ListScreen = ({navigation}) => {
 
   const ItemSeparatorView = () => {
     return (
-      // Flat List Item Separator
       <View
         style={{
           height: 0.5,
           width: '100%',
-          backgroundColor: '#C8C8C8',
+          backgroundColor: '#667',
         }}
       />
     );
@@ -215,10 +225,10 @@ const ListScreen = ({navigation}) => {
           onChangeText={(text) => applySearch(text, masterDataSource)}
           value={search}
           underlineColorAndroid="transparent"
-          placeholder="Search Here"
+          placeholder="word tag. : jp : rnd"
         />
         <FlatList
-          data={addDummyItem(filteredDataSource)}
+          data={addDummyItems(filteredDataSource)}
           keyExtractor={(card, index) => card._id}
           ItemSeparatorComponent={ItemSeparatorView}
           renderItem={ItemView}
@@ -236,6 +246,12 @@ const styles = StyleSheet.create({
     padding: 10,
     color: "#eee",
     fontSize: 24,
+    flex: 1,
+  },
+  info: {
+    padding: 10,
+    color: "#667",
+    fontSize: 18,
     flex: 1,
   },
   itemButton: {
