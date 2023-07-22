@@ -12,7 +12,8 @@ const CreateCardScreen = ({navigation}) => {
   const [notes, setNotes] = useState('');
   const [tags, setTags] = useState('');
   const [message, setMessage] = useState('');
-  
+  const [cardsCreated, setCardsCreated] = useState([]);
+
   async function createCard() {
 
     // Required fields
@@ -44,6 +45,8 @@ const CreateCardScreen = ({navigation}) => {
           let card = res.data;
           console.log("Created card", card);
           setMessage("Card created: " + card.front);
+          card.change = "create"; // TODO - find a cleaner way to indcate change type
+          setCardsCreated([...cardsCreated, card]);
         })
         .catch(e => {
           console.log(`Cannot create card, error ${e}`);
@@ -54,6 +57,7 @@ const CreateCardScreen = ({navigation}) => {
   function clearFields() {
     setFront("");
     setBack("");
+    setNotes("");
     setTags("");
     setMessage("");
   }
@@ -93,6 +97,10 @@ const CreateCardScreen = ({navigation}) => {
         <Button title="Create"
           onPress={createCard}
         />
+        <Button title='Back and refresh List'
+          onPress={() => navigation.navigate("List", {cardsChanged: cardsCreated})}>
+        </Button>
+
         <Button title="Clear" color="red"
           onPress={clearFields}
         />

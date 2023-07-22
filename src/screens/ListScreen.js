@@ -1,5 +1,6 @@
 import React, {useContext, useState, useEffect} from 'react';
 import {SafeAreaView, Text, StyleSheet, View, FlatList, TextInput, Button} from 'react-native';
+import {useRoute} from "@react-navigation/native"
 import {Audio} from 'expo-av';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
@@ -12,11 +13,12 @@ const ORIENTATION_HIDE = 4;
 
 const ListScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
-
   const [search, setSearch] = useState('');
   const [forcedOrientation, setForcedOrientation] = useState(null);
-  const [filteredDataSource, setFilteredDataSource] = useState([]);
-  const [masterDataSource, setMasterDataSource] = useState([]);
+  const [filteredCards, setFilteredCards] = useState([]);
+  const [masterCards, setMasterCards] = useState([]);
+  const route = useRoute()
+  const cardsChanged = route.params?.cardsChanged;
 
   useEffect(() => {
     // TODO - refactor these calls
@@ -30,11 +32,6 @@ const ListScreen = ({navigation}) => {
       .then(res => {
         let cards = res.data;
         prepareCards(cards);
-        setMasterDataSource(cards);
-        // We need to send cards here, because otherwise we try to filter cards
-        // before masterDataSource is updated. We could also useEffect to react
-        // to changes on masterDataSource (and maybe changes to search too?).
-        applySearch(search, cards);
       })
       .catch(e => {
         console.log(`cannot get cards, error ${e}`);
@@ -49,7 +46,46 @@ const ListScreen = ({navigation}) => {
     });
   }, [navigation]);
 
+  useEffect(() => {
+    console.log("Cards changed", cardsChanged);
+    // TODO - cards contain change field with "update", "delete", "create"
+    if (!cardsChanged || cardsChanged.length == 0) return;
+    let cards = [...masterCards]; // new array so set state works
+    for (const cardChanged of cardsChanged) {
+      const change = cardChanged.change;
+      delete cardChanged.change;
+      switch (change) {
+        case "update":
+          const updatedIndex = indexOfCardWithId(cardChanged._id, cards);
+          if (updatedIndex < 0) continue;  // should not happen
+          cards[updatedIndex] = cardChanged;
+          break;
+        case "delete":
+          const deletedIndex = indexOfCardWithId(cardChanged._id, cards);
+          if (deletedIndex < 0) continue; // should not happen
+          cards.splice(deletedIndex, 1);
+          break;
+        case "create":
+          cards = [cardChanged, ...cards];
+          break;
+      }
+    } 
+    prepareCards(cards);
+  }, [cardsChanged]);
+
+  function indexOfCardWithId(id, cards) {
+    console.log("Looking for card: " + id);
+    for (let i = 0; i < cards.length; i++) {
+      if (id == cards[i]._id) {
+        console.log("Found it at index: " + i);
+        return i;
+      }
+    }
+    return -1;
+  }
+
   function prepareCards(cards) {
+    console.log("Preparing cards");
     cards.forEach(card => {
       card.displayText = pickCardText(card, card.orientation);
       const tagsWithDots = card.tags.map(tag => tag + ".");
@@ -60,6 +96,11 @@ const ListScreen = ({navigation}) => {
     });
     sort(cards, c => c.updated, -1);
 
+    setMasterCards(cards);
+    // We need to send cards here, because otherwise we try to filter cards
+    // before masterCards is updated. We could also useEffect to react
+    // to changes on masterCards (and maybe changes to search too?).
+    applySearch(search, cards);
   }
 
   const applySearch = (text, cards) => {
@@ -72,10 +113,10 @@ const ListScreen = ({navigation}) => {
 
       filtered = processCommands(filtered, commands.slice(1)); // other commands
       
-      setFilteredDataSource(filtered);
+      setFilteredCards(filtered);
     } else {
       setForcedOrientation(null);
-      setFilteredDataSource(cards);
+      setFilteredCards(cards);
     }
     setSearch(text);
   };
@@ -83,8 +124,8 @@ const ListScreen = ({navigation}) => {
     // Add special list items
     function addDummyItems(cards) {
     const copy = cards.slice();
-    const amount = cards.length == masterDataSource.length ?
-      `all ${cards.length}` : `${cards.length} of ${masterDataSource.length}`;
+    const amount = cards.length == masterCards.length ?
+      `all ${cards.length}` : `${cards.length} of ${masterCards.length}`;
     copy.unshift({_id: "info", dummy: true, info: `Showing ${amount} cards`});
     copy.push({_id: "last", dummy: true}); // just to add margin at the end
     return copy;
@@ -230,13 +271,13 @@ const ListScreen = ({navigation}) => {
         <TextInput
           clearButtonMode='always'
           style={styles.textInputStyle}
-          onChangeText={(text) => applySearch(text, masterDataSource)}
+          onChangeText={(text) => applySearch(text, masterCards)}
           value={search}
           underlineColorAndroid="transparent"
           placeholder="word tag. : jp : rnd"
         />
         <FlatList
-          data={addDummyItems(filteredDataSource)}
+          data={addDummyItems(filteredCards)}
           keyExtractor={(card, index) => card._id}
           ItemSeparatorComponent={ItemSeparatorView}
           renderItem={ItemView}

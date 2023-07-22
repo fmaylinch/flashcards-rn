@@ -50,21 +50,15 @@ const EditCardScreen = ({navigation}) => {
         .then(res => {
           let card = res.data;
           console.log("Updated card", card);
-          // TODO - update other screens (CardScreen, ListScreen)
           setMessage("Card updated!");
+          card.change = "update"; // TODO - find a cleaner way to indcate change type
+          navigation.navigate('Card', {card});
         })
         .catch(e => {
           // TODO - the error message is not well received
           console.log(`Cannot update card`, JSON.stringify(e));
           setMessage("Error: " + JSON.stringify(e))
         });
-  }
-
-  function clearFields() {
-    setFront("");
-    setBack("");
-    setTags("");
-    setMessage("");
   }
 
   function confirmDeleteCard() {
@@ -84,7 +78,11 @@ const EditCardScreen = ({navigation}) => {
     axios.create(config)
       .delete(`cards/${card._id}`)
       // TODO - reload list, so this card doesn't appear
-      .then(() => setMessage("Card deleted!"))
+      .then(() => {
+        setMessage("Card deleted!");
+        card.change = "delete"; // TODO - find a cleaner way to indcate change type
+        navigation.navigate('Card', {card});
+      })
       .catch(e => {
         console.log(`cannot delete card ${card._id}, error ${e}`);
         Alert.alert('Could not delete card', e);

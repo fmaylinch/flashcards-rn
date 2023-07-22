@@ -10,30 +10,8 @@ import {BASE_URL} from '../config';
 const CardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
   const route = useRoute()
-  //const [card, setCard] = useState(null); // card comes from params
   const card = route.params?.card;
   const id = card._id;
-
-  useEffect(() => {
-    // loadCardFromAPI(); // now we get the card from params
-  }, []);
-
-  function loadCardFromAPI() {
-    // TODO - refactor these calls
-    const config = {
-      baseURL: BASE_URL,
-      headers: {Authorization: "Bearer " + userInfo.token},
-    };
-    axios.create(config)
-      .get(`cards/${id}`)
-      .then(res => {
-        let card = res.data;
-        setCard(card);
-      })
-      .catch(e => {
-        console.log(`cannot get card ${id}, error ${e}`);
-      });
-  }
 
   // https://docs.expo.dev/versions/latest/sdk/audio/#usage
   // TODO - refactor usage here and in ListScreen
@@ -84,8 +62,16 @@ const CardScreen = ({navigation}) => {
             <Text style={styles.tags}>{card.tags.join(" ")}</Text>
             { playButtons(card) }
             <View style={styles.buttonContainer}>
-              <Button title='Edit' color='yellow' onPress={goToEdit}></Button>
+              <Button title='Edit' color='#cc6' onPress={goToEdit}></Button>
             </View>
+            { card.change ?
+              <>
+                <Button title='Back and refresh List' color='#cc6'
+                  onPress={() => navigation.navigate("List", {cardsChanged: [card]})}>
+                </Button>
+                <Text style={styles.change}>{`Change: ${card.change}`}</Text>
+              </>
+            : <></> }
           </>
       }
     </View>
@@ -121,6 +107,12 @@ const styles = StyleSheet.create({
   notes: {
     fontSize: 18,
     marginTop: 20,
+    textAlign: 'center',
+    color: '#bbb',
+  },
+  change: {
+    fontSize: 18,
+    marginBottom: 20,
     textAlign: 'center',
     color: '#bbb',
   },
