@@ -12,7 +12,7 @@ const CardScreen = ({navigation}) => {
   const route = useRoute()
   const card = route.params?.card;
   const id = card._id;
-
+  
   // https://docs.expo.dev/versions/latest/sdk/audio/#usage
   // TODO - refactor usage here and in ListScreen
 
@@ -80,7 +80,7 @@ const CardScreen = ({navigation}) => {
             <View style={styles.buttonContainer}>
               <Button title='Edit' color='#cc6' onPress={goToEdit}></Button>
             </View>
-            { card.change ? <Text style={styles.change}>{`Change: ${card.change}`}</Text> : <></> }
+            { card.change ? <Text style={styles.change}>{`card was ${card.change}d`}</Text> : <></> }
           </>
       }
     </View>
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
     textAlign: 'center',
-    color: '#bbb',
+    color: '#c9c',
   },
   tags: {
     fontSize: 18,
