@@ -29,6 +29,22 @@ const CardScreen = ({navigation}) => {
   }
 
   useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <Button onPress={() => {
+          if (card.change) {
+            console.log("Going back with card changed", card);
+            navigation.navigate("List", {cardsChanged: [card]});
+          } else {
+            console.log("Going back without changes");
+            navigation.goBack();
+          }
+        }} title="Back to List" />
+      ),
+    });
+  }, [navigation, card]);
+
+  useEffect(() => {
     return sound
       ? () => {
           console.log('Unloading Sound');
@@ -64,14 +80,7 @@ const CardScreen = ({navigation}) => {
             <View style={styles.buttonContainer}>
               <Button title='Edit' color='#cc6' onPress={goToEdit}></Button>
             </View>
-            { card.change ?
-              <>
-                <Button title='Back and refresh List' color='#cc6'
-                  onPress={() => navigation.navigate("List", {cardsChanged: [card]})}>
-                </Button>
-                <Text style={styles.change}>{`Change: ${card.change}`}</Text>
-              </>
-            : <></> }
+            { card.change ? <Text style={styles.change}>{`Change: ${card.change}`}</Text> : <></> }
           </>
       }
     </View>

@@ -14,6 +14,22 @@ const CreateCardScreen = ({navigation}) => {
   const [message, setMessage] = useState('');
   const [cardsCreated, setCardsCreated] = useState([]);
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <Button onPress={() => {
+          if (cardsCreated.length > 0) {
+            console.log("Going back with cards created", cardsCreated);
+            navigation.navigate("List", {cardsChanged: cardsCreated})
+          } else {
+            console.log("Going back without cards created");
+            navigation.goBack();
+          }
+        }} title="Back to List" />
+      ),
+    });
+  }, [navigation, cardsCreated]);
+
   async function createCard() {
 
     // Required fields
@@ -97,9 +113,6 @@ const CreateCardScreen = ({navigation}) => {
         <Button title="Create"
           onPress={createCard}
         />
-        <Button title='Back and refresh List'
-          onPress={() => navigation.navigate("List", {cardsChanged: cardsCreated})}>
-        </Button>
 
         <Button title="Clear" color="red"
           onPress={clearFields}
