@@ -17,12 +17,14 @@ const ListScreen = ({navigation}) => {
   const [forcedOrientation, setForcedOrientation] = useState(null);
   const [filteredCards, setFilteredCards] = useState([]);
   const [masterCards, setMasterCards] = useState([]);
+  const [cardsReady, setCardsReady] = useState(false);
   const route = useRoute()
   const cardsChanged = route.params?.cardsChanged;
 
   useEffect(() => {
     // TODO - refactor these calls
     console.log("Loading list of cards from API");
+    setCardsReady(false);
     const config = {
       baseURL: BASE_URL,
       headers: {Authorization: "Bearer " + userInfo.token},
@@ -97,6 +99,7 @@ const ListScreen = ({navigation}) => {
     sort(cards, c => c.updated, -1);
 
     setMasterCards(cards);
+    setCardsReady(true);
     // We need to send cards here, because otherwise we try to filter cards
     // before masterCards is updated. We could also useEffect to react
     // to changes on masterCards (and maybe changes to search too?).
@@ -122,11 +125,15 @@ const ListScreen = ({navigation}) => {
   };
 
     // Add special list items
-    function addDummyItems(cards) {
+  function addDummyItems(cards) {
     const copy = cards.slice();
-    const amount = cards.length == masterCards.length ?
-      `all ${cards.length}` : `${cards.length} of ${masterCards.length}`;
-    copy.unshift({_id: "info", dummy: true, info: `Showing ${amount} cards`});
+    let message = "Loading cards..."; // TODO - add state, also set it when there's an error
+    if (cardsReady) {
+      const amount = cards.length == masterCards.length ?
+        `all ${cards.length}` : `${cards.length} of ${masterCards.length}`;
+      message = `Showing ${amount} cards`;
+    }
+    copy.unshift({_id: "info", dummy: true, info: message});
     copy.push({_id: "last", dummy: true}); // just to add margin at the end
     return copy;
   }
