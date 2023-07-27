@@ -5,6 +5,7 @@ import Slider from '@react-native-community/slider';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
+import Events from '../components/Events';
 
 const EditCardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
@@ -51,8 +52,8 @@ const EditCardScreen = ({navigation}) => {
           let card = res.data;
           console.log("Updated card", card);
           setMessage("Card updated!");
-          card.change = "update"; // TODO - find a cleaner way to indcate change type
-          navigation.navigate('Card', {card});
+          //navigation.navigate('Card', {card});
+          Events.emit("card-change", {card, change: "update"});
         })
         .catch(e => {
           // TODO - the error message is not well received
@@ -80,8 +81,8 @@ const EditCardScreen = ({navigation}) => {
       // TODO - reload list, so this card doesn't appear
       .then(() => {
         setMessage("Card deleted!");
-        card.change = "delete"; // TODO - find a cleaner way to indcate change type
-        navigation.navigate('Card', {card});
+        // navigation.navigate('Card', {card});
+        Events.emit("card-change", {card, change: "delete"});
       })
       .catch(e => {
         console.log(`cannot delete card ${card._id}, error ${e}`);

@@ -3,6 +3,7 @@ import {Button, StyleSheet, Text, View, TextInput, CheckBox} from 'react-native'
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
+import Events from '../components/Events';
 
 const CreateCardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
@@ -12,23 +13,6 @@ const CreateCardScreen = ({navigation}) => {
   const [notes, setNotes] = useState('');
   const [tags, setTags] = useState('');
   const [message, setMessage] = useState('');
-  const [cardsCreated, setCardsCreated] = useState([]);
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <Button onPress={() => {
-          if (cardsCreated.length > 0) {
-            console.log("Going back with cards created", cardsCreated);
-            navigation.navigate("List", {cardsChanged: cardsCreated})
-          } else {
-            console.log("Going back without cards created");
-            navigation.goBack();
-          }
-        }} title="Back to List" />
-      ),
-    });
-  }, [navigation, cardsCreated]);
 
   async function createCard() {
 
@@ -58,11 +42,10 @@ const CreateCardScreen = ({navigation}) => {
     axios.create(config)
         .post(`cards`, card)
         .then(res => {
-          let card = res.data;
-          console.log("Created card", card);
-          setMessage("Card created: " + card.front);
-          card.change = "create"; // TODO - find a cleaner way to indcate change type
-          setCardsCreated([...cardsCreated, card]);
+          let createdCard = res.data;
+          console.log("Created card", createdCard);
+          setMessage("Card just created: " + createdCard.front);
+          Events.emit("card-change", {card: createdCard, change: "create"});
         })
         .catch(e => {
           console.log(`Cannot create card, error ${e}`);

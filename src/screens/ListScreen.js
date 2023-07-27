@@ -5,6 +5,7 @@ import {Audio} from 'expo-av';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
+import Events from '../components/Events';
 
 const ORIENTATION_FRONT = 1;
 const ORIENTATION_BOTH = 2;
@@ -18,8 +19,6 @@ const ListScreen = ({navigation}) => {
   const [filteredCards, setFilteredCards] = useState([]);
   const [masterCards, setMasterCards] = useState([]);
   const [cardsReady, setCardsReady] = useState(false);
-  const route = useRoute()
-  const cardsChanged = route.params?.cardsChanged;
 
   useEffect(() => {
     // TODO - refactor these calls
@@ -49,31 +48,47 @@ const ListScreen = ({navigation}) => {
   }, [navigation]);
 
   useEffect(() => {
-    console.log("Cards changed", cardsChanged);
-    // TODO - cards contain change field with "update", "delete", "create"
-    if (!cardsChanged || cardsChanged.length == 0) return;
+    const screenId = "ListScreen";
+    Events.register(screenId, "card-change", cardChange => {
+      console.log(`${screenId} detected a card change`, cardChange.change);
+      handleCardChange(cardChange);
+    });
+    return () => Events.unregisterAll(screenId);
+  }, []);
+
+  function handleCardChange(cardChange) {
+    // TODO - cardChanged contains change field with "update", "delete", "create"
+
+    // TODO - it seems that sometimes masterCards is empty, maybe when the screen is in background
+    //  it may be removed from memory? See if I can detect lifecycle changes of screens.
+
     let cards = [...masterCards]; // new array so set state works
-    for (const cardChanged of cardsChanged) {
-      const change = cardChanged.change;
-      delete cardChanged.change;
-      switch (change) {
-        case "update":
-          const updatedIndex = indexOfCardWithId(cardChanged._id, cards);
-          if (updatedIndex < 0) continue;  // should not happen
-          cards[updatedIndex] = cardChanged;
-          break;
-        case "delete":
-          const deletedIndex = indexOfCardWithId(cardChanged._id, cards);
-          if (deletedIndex < 0) continue; // should not happen
-          cards.splice(deletedIndex, 1);
-          break;
-        case "create":
-          cards = [cardChanged, ...cards];
-          break;
-      }
-    } 
+    console.log(`Now we have ${cards.length} cards before the change`);
+    console.log("List detected change: " + cardChange.change);
+    switch (cardChange.change) {
+      case "update":
+        const updatedIndex = indexOfCardWithId(cardChange.card._id, cards);
+        if (updatedIndex < 0) break;  // should not happen
+        console.log("Replacing card at index " + updatedIndex);
+        cards[updatedIndex] = cardChange.card;
+        break;
+      case "delete":
+        const deletedIndex = indexOfCardWithId(cardChange.card._id, cards);
+        if (deletedIndex < 0) break; // should not happen
+        console.log("Deleting card at index " + updatedIndex);
+        cards.splice(deletedIndex, 1);
+        break;
+      case "create":
+        console.log("Adding card at the beginning");
+        cards = [cardChange.card, ...cards];
+        break;
+    }
+
+    console.log(`Now we have ${cards.length} cards after the change`);
+
+    setCardsReady(false);
     prepareCards(cards);
-  }, [cardsChanged]);
+  }
 
   function indexOfCardWithId(id, cards) {
     console.log("Looking for card: " + id);
@@ -83,6 +98,7 @@ const ListScreen = ({navigation}) => {
         return i;
       }
     }
+    console.log("Card not found: " + id);
     return -1;
   }
 
@@ -98,6 +114,7 @@ const ListScreen = ({navigation}) => {
     });
     sort(cards, c => c.updated, -1);
 
+    console.log(`Setting ${cards.length} as masterCards`);
     setMasterCards(cards);
     setCardsReady(true);
     // We need to send cards here, because otherwise we try to filter cards

@@ -3,15 +3,23 @@ import {Button, StyleSheet, Text, View} from 'react-native';
 import {useRoute} from "@react-navigation/native"
 import {AuthContext} from '../context/AuthContext';
 import {Audio} from 'expo-av';
-
-import axios from 'axios';
+import Events from '../components/Events';
 import {BASE_URL} from '../config';
 
 const CardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
   const route = useRoute()
-  const card = route.params?.card;
+  const [card, setCard] = useState(route.params?.card);
   const id = card._id;
+
+  useEffect(() => {
+    const screenId = "CardScreen";
+    Events.register(screenId, "card-change", cardChange => {
+      console.log(`${screenId} detected a card change`, cardChange.change);
+      setCard(cardChange.card);
+    });
+    return () => Events.unregisterAll(screenId);
+  }, []);
   
   // https://docs.expo.dev/versions/latest/sdk/audio/#usage
   // TODO - refactor usage here and in ListScreen
@@ -27,22 +35,6 @@ const CardScreen = ({navigation}) => {
     //sound.setOnPlaybackStatusUpdate(status => console.log(status));
     await sound.playAsync();
   }
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <Button onPress={() => {
-          if (card.change) {
-            console.log("Going back with card changed", card);
-            navigation.navigate("List", {cardsChanged: [card]});
-          } else {
-            console.log("Going back without changes");
-            navigation.goBack();
-          }
-        }} title="Back to List" />
-      ),
-    });
-  }, [navigation, card]);
 
   useEffect(() => {
     return sound
@@ -80,7 +72,6 @@ const CardScreen = ({navigation}) => {
             <View style={styles.buttonContainer}>
               <Button title='Edit' color='#cc6' onPress={goToEdit}></Button>
             </View>
-            { card.change ? <Text style={styles.change}>{`card was ${card.change}d`}</Text> : <></> }
           </>
       }
     </View>
