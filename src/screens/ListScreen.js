@@ -19,6 +19,7 @@ const ListScreen = ({navigation}) => {
   const [filteredCards, setFilteredCards] = useState([]);
   const [masterCards, setMasterCards] = useState([]);
   const [cardsReady, setCardsReady] = useState(false);
+  const [change, setChange] = useState();
 
   useEffect(() => {
     // TODO - refactor these calls
@@ -47,24 +48,43 @@ const ListScreen = ({navigation}) => {
     });
   }, [navigation]);
 
+
+  // These 2 effects handle the event. Maybe I can simplify it.
+  // The first effect calls setChange, which forces a call to the second effect.
+  // In CardScreen I don´t need it because it replaces the card (it doesn´t read
+  // the current card state), but try to unify this.
+
   useEffect(() => {
     const screenId = "ListScreen";
     Events.register(screenId, "card-change", cardChange => {
       console.log(`${screenId} detected a card change`, cardChange.change);
-      handleCardChange(cardChange);
+      setChange(cardChange);
     });
     return () => Events.unregisterAll(screenId);
   }, []);
 
-  function handleCardChange(cardChange) {
-    // TODO - cardChanged contains change field with "update", "delete", "create"
+  useEffect(() => {
+    if (change) {
+      handleCardChange(change);
+      setChange(null); // processed
+    }
+  }, [change]);
 
-    // TODO - it seems that sometimes masterCards is empty, maybe when the screen is in background
-    //  it may be removed from memory? See if I can detect lifecycle changes of screens.
+
+  function handleCardChange(cardChange) {
+
+    // I saw that sometimes masterCards was empty, maybe when the screen is in background.
+    // So now I use setChange to force a refresh of the component. This way it works fine.
+    console.log(`There are ${masterCards.length} before the change`);
+    if (masterCards.length == 0) {
+      console.log("--> Ignoring change because masterCards is empty");
+      return;
+    }
 
     let cards = [...masterCards]; // new array so set state works
-    console.log(`Now we have ${cards.length} cards before the change`);
     console.log("List detected change: " + cardChange.change);
+
+    // TODO - cardChanged contains change field with "update", "delete", "create"
     switch (cardChange.change) {
       case "update":
         const updatedIndex = indexOfCardWithId(cardChange.card._id, cards);
