@@ -1,25 +1,19 @@
-import {useContext, useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Button, StyleSheet, Text, View} from 'react-native';
 import {useRoute} from "@react-navigation/native"
-import {AuthContext} from '../context/AuthContext';
 import {Audio} from 'expo-av';
-import Events from '../components/Events';
+import {registerEvent} from '../components/Events';
 import {BASE_URL} from '../config';
 
 const CardScreen = ({navigation}) => {
-  const {userInfo} = useContext(AuthContext);
   const route = useRoute()
-  const [card, setCard] = useState(route.params?.card);
-  const id = card._id;
+  const [card, setCard] = useState(route.params.card);
+  const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    const screenId = "CardScreen";
-    Events.register(screenId, "card-change", cardChange => {
-      console.log(`${screenId} detected a card change`, cardChange.change);
-      setCard(cardChange.card);
-    });
-    return () => Events.unregisterAll(screenId);
-  }, []);
+  registerEvent("CardScreen", "card-change", cardChange => {
+    setCard(cardChange.card);
+    setMessage(`Card change: ${cardChange.change}`)
+  });
   
   // https://docs.expo.dev/versions/latest/sdk/audio/#usage
   // TODO - refactor usage here and in ListScreen
@@ -54,26 +48,21 @@ const CardScreen = ({navigation}) => {
       }</View>
   }
 
-
   function goToEdit() {
     navigation.navigate('EditCard', {card});
   }
 
   return (
     <View style={styles.container}>
-      {card == null ?
-        <Text style={styles.notes}>Card loading...</Text>
-        : <>
-            <Text style={styles.text}>{card.front}</Text>
-            <Text style={styles.text}>{card.back}</Text>
-            <Text style={styles.notes}>{card.notes}</Text>
-            <Text style={styles.tags}>{card.tags.join(" ")}</Text>
-            { playButtons(card) }
-            <View style={styles.buttonContainer}>
-              <Button title='Edit' color='#cc6' onPress={goToEdit}></Button>
-            </View>
-          </>
-      }
+      <Text style={styles.text}>{card.front}</Text>
+      <Text style={styles.text}>{card.back}</Text>
+      <Text style={styles.notes}>{card.notes}</Text>
+      <Text style={styles.tags}>{card.tags.join(" ")}</Text>
+      { playButtons(card) }
+      <View style={styles.buttonContainer}>
+        <Button title='Edit' color='#cc6' onPress={goToEdit}></Button>
+      </View>
+      <Text style={styles.message}>{message}</Text>
     </View>
   );
 };
@@ -110,7 +99,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#bbb',
   },
-  change: {
+  message: {
     fontSize: 18,
     marginBottom: 20,
     textAlign: 'center',

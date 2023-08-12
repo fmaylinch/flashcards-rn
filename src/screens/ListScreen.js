@@ -1,11 +1,10 @@
 import React, {useContext, useState, useEffect} from 'react';
 import {SafeAreaView, Text, StyleSheet, View, FlatList, TextInput, Button} from 'react-native';
-import {useRoute} from "@react-navigation/native"
 import {Audio} from 'expo-av';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
-import Events from '../components/Events';
+import {registerEvent} from '../components/Events';
 
 const ORIENTATION_FRONT = 1;
 const ORIENTATION_BOTH = 2;
@@ -19,7 +18,6 @@ const ListScreen = ({navigation}) => {
   const [filteredCards, setFilteredCards] = useState([]);
   const [masterCards, setMasterCards] = useState([]);
   const [cardsReady, setCardsReady] = useState(false);
-  const [change, setChange] = useState();
 
   useEffect(() => {
     // TODO - refactor these calls
@@ -49,37 +47,15 @@ const ListScreen = ({navigation}) => {
   }, [navigation]);
 
 
-  // These 2 effects handle the event. Maybe I can simplify it.
-  // The first effect calls setChange, which forces a call to the second effect.
-  // In CardScreen I don´t need it because it replaces the card (it doesn´t read
-  // the current card state), but try to unify this.
-
-  useEffect(() => {
-    const screenId = "ListScreen";
-    Events.register(screenId, "card-change", cardChange => {
-      console.log(`${screenId} detected a card change`, cardChange.change);
-      setChange(cardChange);
-    });
-    return () => Events.unregisterAll(screenId);
-  }, []);
-
-  useEffect(() => {
-    if (change) {
-      handleCardChange(change);
-      setChange(null); // processed
-    }
-  }, [change]);
-
+  registerEvent("ListScreen", "card-change", cardChange => {
+    handleCardChange(cardChange);
+  });
 
   function handleCardChange(cardChange) {
 
-    // I saw that sometimes masterCards was empty, maybe when the screen is in background.
-    // So now I use setChange to force a refresh of the component. This way it works fine.
+    // Sometimes I saw that masterCards was empty.
+    // With the new way of handling events it should be OK. 
     console.log(`There are ${masterCards.length} before the change`);
-    if (masterCards.length == 0) {
-      console.log("--> Ignoring change because masterCards is empty");
-      return;
-    }
 
     let cards = [...masterCards]; // new array so set state works
     console.log("List detected change: " + cardChange.change);

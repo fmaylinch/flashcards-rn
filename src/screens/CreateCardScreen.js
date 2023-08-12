@@ -3,7 +3,7 @@ import {Button, StyleSheet, Text, View, TextInput, CheckBox} from 'react-native'
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
-import Events from '../components/Events';
+import {emitEvent} from '../components/Events';
 
 const CreateCardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
@@ -45,7 +45,7 @@ const CreateCardScreen = ({navigation}) => {
           let createdCard = res.data;
           console.log("Created card", createdCard);
           setMessage("Card just created: " + createdCard.front);
-          Events.emit("card-change", {card: createdCard, change: "create"});
+          emitEvent("card-change", {card: createdCard, change: "create"});
         })
         .catch(e => {
           console.log(`Cannot create card, error ${e}`);
