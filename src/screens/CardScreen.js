@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {Button, StyleSheet, Text, View} from 'react-native';
+import {Button, StyleSheet, Text, View, Linking} from 'react-native';
 import {useRoute} from "@react-navigation/native"
 import {Audio} from 'expo-av';
 import {registerEvent} from '../components/Events';
@@ -52,9 +52,14 @@ const CardScreen = ({navigation}) => {
     navigation.navigate('EditCard', {card});
   }
 
+  function openNihongo() {
+    const url = "https://nihongo-app.com/dictionary/word/" + card.front;
+    Linking.openURL(url);
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{card.front}</Text>
+      <Text style={styles.text} onPress={openNihongo}>{card.front}</Text>
       <Text style={styles.text}>{card.back}</Text>
       <Text style={styles.notes}>{card.notes}</Text>
       <Text style={styles.tags}>{card.tags.join(" ")}</Text>
