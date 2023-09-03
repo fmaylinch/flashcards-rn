@@ -102,7 +102,7 @@ const ListScreen = ({navigation}) => {
     console.log("Preparing cards");
     cards.forEach(card => {
       card.displayText = pickCardText(card, card.orientation);
-      const tagsWithDots = card.tags.map(tag => tag + ".");
+      const tagsWithDots = card.tags.map(tag => `.${tag}.`);
       card.searchText = `${card.front} ${card.back} ${tagsWithDots} ${card.notes}`.toLowerCase();
       if (card.files.length > 0) { // randomly choose first file to play
         card.fileIndex = Math.floor(Math.random() * card.files.length);
