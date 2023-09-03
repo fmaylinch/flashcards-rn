@@ -14,6 +14,7 @@ const EditCardScreen = ({navigation}) => {
   const card = route.params?.card;
 
   const [front, setFront] = useState(card.front);
+  const [mainWords, setMainWords] = useState(card.mainWords.join(" "));
   const [back, setBack] = useState(card.back);
   const [orientation, setOrientation] = useState(card.orientation);
   const [notes, setNotes] = useState(card.notes);
@@ -29,6 +30,7 @@ const EditCardScreen = ({navigation}) => {
     }
 
     // TODO - this is also used in CreateCardScreen
+    const mainWordsArray = mainWords.trim().split(/[ ,.]+/).filter(x => x);
     const tagsArray = tags.trim().toLowerCase().split(/[ ,.]+/).filter(x => x);
 
     const config = {
@@ -38,6 +40,7 @@ const EditCardScreen = ({navigation}) => {
 
     const cardUpdate = {
         front: front.trim(),
+        mainWords: mainWordsArray,
         back: back.trim(),
         orientation: orientation,
         notes: notes.trim(),
@@ -137,6 +140,12 @@ const EditCardScreen = ({navigation}) => {
           multiline={true}
           value={notes}
           onChangeText={v => setNotes(v)}
+        />
+        <TextInput
+          placeholder="Main words"
+          style={styles.input}
+          value={mainWords}
+          onChangeText={v => setMainWords(v)}
         />
         <TextInput
           placeholder="Tags"

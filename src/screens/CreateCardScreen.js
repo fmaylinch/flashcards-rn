@@ -4,11 +4,13 @@ import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
 import {emitEvent} from '../components/Events';
+import {Audio} from 'expo-av';
 
 const CreateCardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
 
   const [front, setFront] = useState('');
+  const [mainWords, setMainWords] = useState('');
   const [back, setBack] = useState('');
   const [notes, setNotes] = useState('');
   const [tags, setTags] = useState('');
@@ -23,8 +25,10 @@ const CreateCardScreen = ({navigation}) => {
     }
 
     // TODO - this is also used in EditCardScreen
+    const mainWordsArray = mainWords.trim().split(/[ ,.]+/).filter(x => x);
     const tagsArray = tags.trim().toLowerCase().split(/[ ,.]+/).filter(x => x);
 
+    // TODO - refactor these configs
     const config = {
         baseURL: BASE_URL,
         headers: {Authorization: "Bearer " + userInfo.token},
@@ -32,6 +36,7 @@ const CreateCardScreen = ({navigation}) => {
 
     const card = {
         front: front.trim(),
+        mainWords: mainWordsArray,
         back: back.trim(),
         notes: notes.trim(),
         tags: tagsArray,
@@ -61,6 +66,68 @@ const CreateCardScreen = ({navigation}) => {
     setMessage("");
   }
 
+    // https://docs.expo.dev/versions/latest/sdk/audio/#usage
+  // TODO - refactor usage here and in CardScreen
+
+  const [sound, setSound] = useState();
+
+  async function playSound(file) {
+    const uri = `${BASE_URL}/audio/${file}`;
+    console.log('Loading Sound from uri', uri);
+    const { sound } = await Audio.Sound.createAsync({uri});
+    setSound(sound);
+    //console.log('Setting status callback');
+    //sound.setOnPlaybackStatusUpdate(status => console.log(status));
+    await sound.playAsync();
+  }
+
+  useEffect(() => {
+    return sound
+      ? () => {
+          console.log('Unloading Sound');
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
+
+  // Optimize, to avoid generating the same audio multiple times
+  const [testCard, setTestCard] = useState();
+
+  function testListen() {
+
+    // TODO - refactor these configs
+    const config = {
+      baseURL: BASE_URL,
+      headers: {Authorization: "Bearer " + userInfo.token},
+    };
+
+    const card = {
+        front: front.trim() // we only need this for test listen
+    };
+
+    // Audio already generated
+    if (testCard && testCard.front == card.front) {
+      setMessage("Playing again: " + testCard.front);
+      playSound(testCard.files[0]);
+      return;
+    }
+
+    setMessage("Generating test audio for card")
+    axios.create(config)
+        .post(`cards/tts`, card)
+        .then(res => {
+          let testCard = res.data;
+          setTestCard(testCard);
+          console.log("Test card", testCard);
+          setMessage("Playing: " + testCard.front);
+          playSound(testCard.files[0])
+        })
+        .catch(e => {
+          console.log(`Cannot test audio, error ${e}`);
+          setMessage("Error: " + JSON.stringify(e))
+        });
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.wrapper}>
@@ -72,6 +139,11 @@ const CreateCardScreen = ({navigation}) => {
           value={front}
           onChangeText={v => setFront(v)}
         />
+
+        <Button title="Test Listen"
+          onPress={testListen}
+        />
+
         <TextInput
           placeholder="English"
           style={styles.input}
@@ -87,6 +159,12 @@ const CreateCardScreen = ({navigation}) => {
           onChangeText={v => setNotes(v)}
         />
         <TextInput
+          placeholder="Main words"
+          style={styles.input}
+          value={mainWords}
+          onChangeText={v => setMainWords(v)}
+        />
+        <TextInput
           placeholder="Tags"
           style={styles.input}
           value={tags}
@@ -95,10 +173,6 @@ const CreateCardScreen = ({navigation}) => {
   
         <Button title="Create"
           onPress={createCard}
-        />
-
-        <Button title="Clear" color="red"
-          onPress={clearFields}
         />
 
         <Text style={styles.message}>{message}</Text>
