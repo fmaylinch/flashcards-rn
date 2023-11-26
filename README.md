@@ -1,7 +1,5 @@
 # Flashcards app
 
-(Work in progress)
-
 Backend part:
 - https://github.com/fmaylinch/flashcards
 

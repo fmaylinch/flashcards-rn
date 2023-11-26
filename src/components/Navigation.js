@@ -6,6 +6,7 @@ import ListScreen from '../screens/ListScreen';
 import CardScreen from '../screens/CardScreen';
 import EditCardScreen from '../screens/EditCardScreen';
 import CreateCardScreen from '../screens/CreateCardScreen';
+import OptionsScreen from '../screens/OptionsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import {AuthContext} from '../context/AuthContext';
@@ -31,6 +32,7 @@ const Navigation = () => {
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="List" component={ListScreen} />
+            <Stack.Screen name="Options" component={OptionsScreen} />
             <Stack.Screen name="CreateCard" component={CreateCardScreen} />
             <Stack.Screen name="Card" component={CardScreen} />
             <Stack.Screen name="EditCard" component={EditCardScreen} />
