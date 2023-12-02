@@ -1,10 +1,12 @@
 import React, {useContext, useState, useEffect} from 'react';
+import {useRoute} from "@react-navigation/native"
 import {SafeAreaView, Text, StyleSheet, View, FlatList, TextInput, Button} from 'react-native';
 import {Audio} from 'expo-av';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
 import {BASE_URL} from '../config';
 import {registerEvent} from '../components/Events';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ORIENTATION_FRONT = 1;
 const ORIENTATION_BOTH = 2;
@@ -12,6 +14,9 @@ const ORIENTATION_BACK = 3;
 const ORIENTATION_HIDE = 4;
 
 const ListScreen = ({navigation}) => {
+  const route = useRoute()
+  const [local, setLocal] = useState(route.params.local);
+
   const {userInfo} = useContext(AuthContext);
   const [search, setSearch] = useState('');
   const [forcedOrientation, setForcedOrientation] = useState(null);
@@ -20,22 +25,25 @@ const ListScreen = ({navigation}) => {
   const [cardsReady, setCardsReady] = useState(false);
 
   useEffect(() => {
-    // TODO - refactor these calls
-    console.log("Loading list of cards from API");
-    setCardsReady(false);
-    const config = {
-      baseURL: BASE_URL,
-      headers: {Authorization: "Bearer " + userInfo.token},
-    };
-    axios.create(config)
-      .get(`cards`)
-      .then(res => {
-        let cards = res.data;
+    (async () => {
+      try {
+        // TODO - refactor these calls
+        setCardsReady(false);
+
+        let items;
+        if (local) {
+            items = await loadItemsFromStorage();
+        } else {
+            items = await loadItemsFromApi();
+            await saveItemsToStorage(items);
+        }
+
+        let cards = items;
         prepareCards(cards);
-      })
-      .catch(e => {
+      } catch(e) {
         console.log(`cannot get cards, error ${e}`);
-      });
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -46,10 +54,33 @@ const ListScreen = ({navigation}) => {
     });
   }, [navigation]);
 
-
   registerEvent("ListScreen", "card-change", cardChange => {
     handleCardChange(cardChange);
   });
+
+  // Here I say Items because I copied some code from linklist 
+
+  async function loadItemsFromApi() {
+    console.log("Loading list of cards from API");
+    const config = {
+      baseURL: BASE_URL,
+      headers: {Authorization: "Bearer " + userInfo.token},
+    };
+    const response = await axios.create(config).get(`cards`);
+    return response.data;
+  }
+
+  async function loadItemsFromStorage() {
+    console.log("Loading items from storage");
+    const json = await AsyncStorage.getItem('items')
+    const items = json != null ? JSON.parse(json) : [];
+    return items;
+  }
+
+  async function saveItemsToStorage(items) {
+    console.log(`Saving ${items.length} items to storage`);
+    await AsyncStorage.setItem("items", JSON.stringify(items));
+  }
 
   function handleCardChange(cardChange) {
 
