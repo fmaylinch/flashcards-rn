@@ -15,7 +15,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.codethen.flashcards"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +26,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1159fa90-33be-4b17-9f44-df60cd44e614"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1159fa90-33be-4b17-9f44-df60cd44e614"
     }
   }
 }
