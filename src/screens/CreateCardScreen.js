@@ -2,9 +2,10 @@ import {useContext, useEffect, useState} from 'react';
 import {Button, StyleSheet, Text, View, TextInput, CheckBox} from 'react-native';
 import {AuthContext} from '../context/AuthContext';
 import axios from 'axios';
-import {BASE_URL} from '../config';
+import {BASE_URL, OPENAI_API_KEY} from '../config';
 import {emitEvent} from '../components/Events';
 import {Audio} from 'expo-av';
+import OpenAI from "openai";
 
 const CreateCardScreen = ({navigation}) => {
   const {userInfo} = useContext(AuthContext);
@@ -15,6 +16,9 @@ const CreateCardScreen = ({navigation}) => {
   const [notes, setNotes] = useState('');
   const [tags, setTags] = useState('');
   const [message, setMessage] = useState('');
+
+  // TODO - enter key in OptionsScreen
+  const openai = new OpenAI({apiKey: OPENAI_API_KEY});
 
   async function createCard() {
 
@@ -93,7 +97,7 @@ const CreateCardScreen = ({navigation}) => {
   // Optimize, to avoid generating the same audio multiple times
   const [testCard, setTestCard] = useState();
 
-  function testListen() {
+  function listen() {
 
     // TODO - refactor these configs
     const config = {
@@ -128,6 +132,32 @@ const CreateCardScreen = ({navigation}) => {
         });
   }
 
+  async function analyse() {
+      console.log("Analysing: " + front);
+      try {
+          // I need to call this via VPN
+          const completion = await openai.chat.completions.create({
+              messages: [{
+                  role: "user",
+                  content: `From the Japanese sentence "${front}", ` +
+                    'I want the English translation and the main words in Japanese (omit particles and markers).' +
+                    'Respond with a JSON with fields "translation" and "words".'
+              }],
+              model: "gpt-4"
+          });
+          setNotes(JSON.stringify(completion.choices[0])); // TODO - to see the raw output
+          const json = completion.choices[0].message.content;
+          const data = JSON.parse(json);
+          if (data) {
+              setBack(data.translation);
+              setMainWords(data.mainWords.join(' '));
+          }
+      } catch (e) {
+          setNotes("error from OpenAI");
+          console.log("Error when calling openai.chat.completions.create", e);
+      }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.wrapper}>
@@ -140,9 +170,14 @@ const CreateCardScreen = ({navigation}) => {
           onChangeText={v => setFront(v)}
         />
 
-        <Button title="Test Listen"
-          onPress={testListen}
-        />
+        <View style={styles.buttonRow}>
+          <Button title="Listen"
+                  onPress={listen}
+          />
+          <Button title="Analyse"
+                  onPress={analyse}
+          />
+        </View>
 
         <TextInput
           placeholder="English"
@@ -183,6 +218,11 @@ const CreateCardScreen = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
+  buttonRow: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-around"
+  },
   container: {
     flex: 1,
     alignItems: 'center',
